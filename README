@@ -1,0 +1,56 @@
+pandora_client - python client and libary to access a pan.do/ra instances
+
+For more info on using pandora_client, check
+http://wiki.0x2620.org/wiki/pandora_client
+
+pandora client example:
+  import pandora_client
+  #example config.json
+  '''
+  {
+      "url": "http://localhost:8000/api/",
+      "username": "username",
+      "password": "password",
+      "cache": "~/.ox/client.sqlite",
+      "media-cache": "~/.ox/media",
+      "volumes": {
+          "volumename": "/media/2010/Movies"
+      }
+  }
+  '''
+  c = pandora_client.Client('config.json')
+  c.scan()  #scans all volumes for files and updates cache db
+  c.sync()  #syncs cached file info with site, and encodes and uploads requested media
+  c.clean() #cleanup transcodes created druing sync to save disk space
+
+
+just using the API:
+    api = pandora_client.API("http://localhost:8000/api/")
+    r = api.find(
+        query={'conditions':[]},
+        keys=['title', 'year'],
+        range=[0, 100]
+    )
+    for i in r['data']['items']:
+        ...
+
+api documentation is available as python docstrings.
+i.e. in ipython:
+  api.find?
+(alternatively you can open the api url in a browser to read further documentation)
+
+
+== Distributed encoding ==
+pandora_client can distribute the encoding to multiple nodes
+on a local network or multiple encodings on the same host.
+
+to do this you need to install additional dependencies:
+    apt-get install python-twisted python-requests
+    (on ubuntu 12.04 you need a newer version of requests,
+     i.e: sudo easy_install -U requests)
+
+now run one node in server mode:
+    pandora_client server
+
+and start the other nodes with:
+    pandora_client client http://SERVER_IP:8789

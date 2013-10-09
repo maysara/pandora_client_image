@@ -1,0 +1,69 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+# vi:si:et:sw=4:sts=4:ts=4
+# GPL 2012
+
+import os
+import sys
+from optparse import OptionParser
+import json
+
+root = os.path.join(os.path.abspath(os.path.dirname(__file__)), '..')
+if os.path.exists(os.path.join(root, 'pandora_client')):
+    sys.path.insert(0, root)
+
+
+import pandora_client
+
+if __name__ == '__main__':
+    usage = "usage: %prog [options] action"
+    parser = OptionParser(usage=usage)
+    parser.add_option('-v', '--version', dest='version', action="store_true")
+    parser.add_option('-c', '--config', dest='config',
+        help='config.json containing config', default='~/.ox/client.json', type='string')
+    parser.add_option('-d', '--debug', dest='debug',
+        help='output debug information', action="store_true")
+    (opts, args) = parser.parse_args()
+
+    if opts.version:
+        print "%s %s" % (os.path.basename(sys.argv[0]), pandora_client.__version__)
+        sys.exit(0)
+    opts.config = os.path.expanduser(opts.config)
+    if (args and args[0] not in ('config', 'client') and not os.path.exists(opts.config)):
+        print 'no configuration found, run "%s config" or specify one with -c' % sys.argv[0]
+        sys.exit(1)
+
+    if None in (opts.config, ):
+        parser.print_help()
+        sys.exit(1)
+
+    actions = ('scan', 'sync', 'upload', 'upload_frames', 'extract', 'clean', 'cmd', 'import_srt')
+    config = ('config', 'add_volume')
+    server = ('server', 'client')
+    if not args or args[0] not in actions + config + server:
+        parser.error('''you must specify a valid action.
+\t\tknown actions are: %s
+\t\tconfiguration:     config, add_volume
+\t\tdistributed encoding: server, client
+for more information visit https://wiki.0x2620.org/wiki/pandora_client''' % ', '.join(actions))
+
+    action = args[0]
+
+    offline = action in config or action == 'client'
+    if action == 'client':
+        opts.config = {'url': '', 'cache': '~/.ox/client.sqlite', 'media-cache': '~/.ox/media'}
+    if action == 'config':
+        if not os.path.exists(opts.config):
+            with open(opts.config, 'w') as f:
+                json.dump({
+                  "url": "",
+                  "username": "", 
+                  "password": "", 
+                  "cache": "~/.ox/client.sqlite", 
+                  "media-cache": '~/.ox/media',
+                  "volumes": {}
+                }, f, indent=2)
+    pandora_client.DEBUG = opts.debug
+    c = pandora_client.Client(opts.config, offline)
+    getattr(c, action)(args[1:])
+
