@@ -53,6 +53,8 @@ def encode(filename, prefix, profile, info=None, extract_frames=True):
     cache = os.path.join(prefix, os.path.join(*utils.hash_prefix(oshash)))
     if info.get('video') and extract_frames:
         frames = get_frames(filename, prefix, info)
+    else:
+        frames = []
     if info.get('video') or info.get('audio'):
         media_f = os.path.join(cache, profile)
         if not os.path.exists(media_f) \
@@ -136,7 +138,14 @@ class Client(object):
             self._config = config
         if not self._config['url'].endswith('/'):
             self._config['url'] = self._config['url'] + '/'
-        self.profile = self._config.get('profile', '480p.webm')
+        '''Wafaa replaced the commented line with the following line to add extension fit for Images'''
+        #self.profile = self._config.get('profile', '480p.webm')
+        #self.profile = self._config.get('profile', '480p.jpg')
+        '''Wafaa choose webp format instead of jpg extension fit for Images'''				
+        #self.profile = self._config.get('profile', '480p.png')
+        self.profile = self._config.get('profile', '480p.webp')
+        ''' wafaa choose orig.webp to keep original file'''
+        #self.orig_profile = self._config.get('orig_profile', 'orig.webp')
 
         if not offline:
             self.online()
@@ -280,7 +289,13 @@ class Client(object):
         self.api = API(self._config['url'], media_cache=self.media_cache())
         self.api.DEBUG = DEBUG
         if self.signin():
-            self.profile = "%sp.webm" % max(self.api.site['video']['resolutions'])
+            #self.profile = "%sp.webm" % max(self.api.site['video']['resolutions'])
+            #self.profile = "%sp.jpg" % max(self.api.site['video']['resolutions'])
+            ''' wafaa choose webp instead of jpg'''
+            self.profile = "%sp.webp" % max(self.api.site['video']['resolutions'])
+            #self.profile = "%sp.png" % max(self.api.site['video']['resolutions'])
+            ''' wafaa choose orig.webp to keep original file'''
+            #self.orig_profile = "orig"
         self.folderdepth = self._config.get('folderdepth', self.api.site['site'].get('folderdepth', 3))
 
     def signin(self):
@@ -538,6 +553,7 @@ class Client(object):
                 print "you need to login or run pandora_client extract offline"
                 return
             self.update_encodes()
+            files = self.get_encodes(self._config['url'])
 
         for oshash in files:
             info = self.info(oshash)
@@ -564,6 +580,9 @@ class Client(object):
             post['volume'] = name
             print 'sending list of files in %s (%s total)' % (name, len(post['files']))
             r = self.api.update(post)
+            '''wafaa added the following two print lines'''
+            print 'post in sync %s' % post
+            print 'response in sync %s' % r
             if r['status']['code'] == 200:
                 #backend works on update request asyncronously, wait for it to finish
                 if 'taskId' in r['data']:
@@ -575,7 +594,7 @@ class Client(object):
                     #send empty list to get updated list of requested info/files/data
                     post = {'info': {}}
                     r = self.api.update(post)
-
+                    print 'second response in sync %s' % r
                 if r['data']['info']:
                     info = r['data']['info']
                     max_info = 100
@@ -589,7 +608,11 @@ class Client(object):
                             sent += len(post['info'])
                     if sent:
                         print 'sent info for %s files' % sent
-
+                        '''wafaa added the following print'''
+                        print 'info here %s' % info
+                        '''wafaa added the following else & print'''
+                    else:
+                        print 'not sent %s %s' % (info, post)
         if not 'data' in r:
             print r
             return
@@ -637,6 +660,8 @@ class Client(object):
                             'info': info,
                             'filename': filename
                         })
+                        '''wafaa added the following print '''
+                        print "arg %s" % arg
                     data.append(oshash)
                 else:
                     data.append(arg)
@@ -649,6 +674,8 @@ class Client(object):
             data = r['data']['data']
             files = r['data']['file']
             info = r['data']['info']
+            '''wafaa'''
+            print 'empty data sent'
         
         if info:
             print 'info for %d files requested' % len(info)
@@ -663,7 +690,10 @@ class Client(object):
                     sent += len(post['info'])
             if sent:
                 print 'uploading info for %d files' % sent
-
+            '''wafaa added following else
+            '''								
+        else:
+            print "no info but %s" % info
         if data:
             print 'encoding and uploading %s videos' % len(data)
             for oshash in data:
@@ -675,6 +705,7 @@ class Client(object):
                             if not self.api.uploadVideo(path,
                                                     data, self.profile, info):
                                 print 'video upload failed, giving up, please try again'
+                                print 'Path %s, Data %s, Profile %s, Info %s' % (path, data, self.profile, info)
                                 return
                             if 'rightsLevel' in self._config:
                                 r = self.api.find({'query': {
@@ -691,7 +722,10 @@ class Client(object):
                                         'rightsLevel': self._config['rightsLevel']
                                     })
                             break
-
+            '''wafaa added following else
+            '''										
+        else:
+            print "no data %s" % data       
         if files:
             print 'uploading %s files' % len(files)
             for oshash in files:
@@ -699,6 +733,10 @@ class Client(object):
                     if os.path.exists(path):
                         self.api.uploadData(path, oshash)
                         break
+            '''wafaa added following else
+            '''								
+        else:
+            print "no files %s" %files
 
     def upload_frames(self, args):
         if not self.user:

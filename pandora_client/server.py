@@ -135,8 +135,11 @@ class Server(Resource):
                         response['oshash'] = oshash
                         url = 'http://%s:%s/get/%s' % (request.host.host, request.host.port, oshash)
                         output = '/tmp/%s.%s' % (oshash, self.client.profile)
+						#response['cmd'] = extract.video_cmd(url, output, self.client.profile, info)
+						#wafaa response['cmd'][0] = 'ffmpeg'
+						#wafaa replaced the previous two lines with the following two lines
                         response['cmd'] = extract.video_cmd(url, output, self.client.profile, info)
-                        response['cmd'][0] = 'ffmpeg'
+                        response['cmd'][0] = 'convert'												
                         response['output'] = output
                         self.update_status(oshash, 'active')
                         print oshash, f

@@ -65,21 +65,40 @@ def frame(video, target, position):
         pre = 0
     else:
         position = 2
+    ''' wafaa commented the following command and replaced it with convert
     cmd = [command('ffmpeg'), '-y', '-ss', str(pre), '-i', video, '-ss', str(position),
             '-vf', 'scale=iw*sar:ih',
             '-an', '-vframes', '1', target]
+    '''
+    #wafaa cmd = [command('ffmpeg'), '-y', '-ss', str(position), '-i', video, '-an', '-vframes', '1', target]
+    cmd = [command('convert'), video, '-resize', '50', target]
     r = run_command(cmd)
     return r == 0
-
+'''This function is not used till now'''
 def supported_formats():
-    p = subprocess.Popen([command('ffmpeg'), '-codecs'],
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    #wafaa commented the following line of code
+		#p = subprocess.Popen([command('ffmpeg'), '-codecs'],
+    #wafaa p = subprocess.Popen([command('identify'), '-list', 'format'],		
+    #wafaa replaced the previous commented line with following cmd
+    p = subprocess.Popen([command('convert')],
+        stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     stdout, stderr = p.communicate()
     return {
-        #'ogg': 'libtheora' in stdout and 'libvorbis' in stdout,
-        'webm': 'libvpx' in stdout and 'libvorbis' in stdout,
-        'mp4': 'libx264' in stdout and 'libvo_aacenc' in stdout,
+      #'ogg': 'libtheora' in stdout and 'libvorbis' in stdout,
+      #wafaa commented the following two lines and replaced them with coming lines
+		  #'webm': 'libvpx' in stdout and 'libvorbis' in stdout,
+		  #'mp4': 'libx264' in stdout and 'libvo_aacenc' in stdout,
+      #wafaa added the following 5 lines
+			'jpg' in stdout,
+			'jpeg' in stdout,
+			'png' in stdout,	
+       #wafaa 'webp': 'libwebp2' in stdout,
+       #'webp' in stdout,
     }
+
+'''
+We need to add img_cmd() func in future
+'''
 
 def video_cmd(video, target, profile, info):
 
@@ -261,20 +280,55 @@ def video_cmd(video, target, profile, info):
             audio_settings += ['-acodec', 'libvorbis']
     else:
         audio_settings = ['-an']
-
+    '''wafaa commented the following command related to video
     cmd = [command('ffmpeg'), '-y', '-i', video, '-threads', '4'] \
           + audio_settings \
           + video_settings
-
+    '''
+    '''wafaa added the following command instead of the previous commented part
+    to convert any image format to jpg with resolution 480p for height and added
+    the target to the cmd instead of appending it in next lines. Also, all conditions 
+    that are checking file extensions are commented
+    We need to add cmd to keep orig image so can use it later if needed 
+    if we needed and metadata cuz jpg is loosly format'''
+    
+    #cmd = [command('convert'), video, '-resize', 'x480', target]
+    '''
+    #Wrong cuz the second command will override the 1st cmd
+    cmd = [command('cp'), video, target]
+    cmd += [command('|')]
+    cmd += [command('convert'), video, '-resize', 'x480', '-define', 'webp:lossless=true', target]
+    '''
+    cmd = [command('convert'), video, '-resize', 'x480', target]
+    #cmd = [command('convert'), video, '-resize', 'x480', '-define', 'webp:lossless=true', target]
+    '''The following cmd cwebp is to convert images to the WebP format'''
+    #cmd = [command('cwebp'), video, '-resize', 'x480', '-define', 'webp:lossless=true', '-o', target]
+		#cmd = [command('cwebp'), video, '-o', target]
+    '''The following cmd dwebp is to convert images from the WebP format'''
+    #cmd = [command('dwebp'), video, '-resize', 'x480', '-define', 'webp:lossless=true', '-o', target]
+		#cmd2 = [command('cp'), video, target]
+    print "cmd print %s" % cmd
+    
+    ''' wafaa commented the following lines
     if format == 'webm':
         cmd += ['-f', 'webm', target]
     elif format == 'mp4':
         #mp4 needs postprocessing(qt-faststart), write to temp file
         cmd += ["%s.mp4" % target]
+        elif format == 'jpg':
+        cmd += ["%s.jpg" % target]
     else:
         cmd += [target]
+        print "cmd print %cmd" % cmd
+    '''
     return cmd
 
+'''wafaa added function to keep original file by copying it to the server'''
+'''
+def copy_orig(video, target2, orig_profile, info):
+    cmd = [command('cp'), video, target]
+    return cmd
+'''
 def video(video, target, profile, info):
     cmd = video_cmd(video, target, profile, info)
     profile, format = profile.split('.')
@@ -292,6 +346,7 @@ def video(video, target, profile, info):
             os.unlink("%s.mp4" % target)
         print 'Input:\t', video
         print 'Output:\t', target
+        #print 'Output:\t', jpgtarget
     except KeyboardInterrupt:
         p.kill()
         r = 1

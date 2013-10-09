@@ -43,9 +43,12 @@ class DistributedClient:
         return False
 
     def encode(self, oshash, cmd, output):
-        cmd[0] = extract.command('ffmpeg')
+        #wafaa cmd[0] = extract.command('ffmpeg')
+        cmd[0] = extract.command('cwebp')
         try:
-            p = subprocess.Popen(cmd)
+            #wafaa commented the following line and replaced it with the line after it
+						#wafaa p = subprocess.Popen(cmd)
+            p = subprocess.Popen([cmd, self, '-o', output])
             r = None
             n = 0
             while True:

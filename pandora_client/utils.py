@@ -38,10 +38,70 @@ class AspectRatio(fractions.Fraction):
     @property
     def ratio(self):
         return "%d:%d" % (self.numerator, self.denominator)
+'''wafaa
+def imginfo(filename, cached=True):
+    if cached:
+        return cache(filename, 'info')
+    if os.path.getsize(filename):
+        ffmpeg2theora = cmd('ffmpeg2theora')
+        p = subprocess.Popen([ffmpeg2theora], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        info, error = p.communicate()
+        version = info.split('\n')[0].split(' - ')[0].split(' ')[-1]
+        if version < '0.27':
+            raise EnvironmentError('version of ffmpeg2theora needs to be 0.27 or later, found %s' % version)
+        p = subprocess.Popen([ffmpeg2theora, '--info', filename],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        info, error = p.communicate()
+        try:
+            info = json.loads(info)
+        except:
+            #remove metadata, can be broken
+            reg = re.compile('"metadata": {.*?},', re.DOTALL)
+            info = re.sub(reg, '', info)
+            info = json.loads(info)
+        if 'video' in info:
+            for v in info['video']:
+                if not 'display_aspect_ratio' in v and 'width' in v:
+                    v['display_aspect_ratio'] = '%d:%d' % (v['width'], v['height'])
+                    v['pixel_aspect_ratio'] = '1:1'
+        return info
+
+    return {'path': filename, 'size': 0}
+'''
+#wafaa created imginfo func
+def imginfo(filename, cached=True):
+    if cached:
+        return cache(filename, 'info')
+    if os.path.getsize(filename):
+        ffmpeg2theora = cmd('ffmpeg2theora')
+        p = subprocess.Popen([ffmpeg2theora], stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        info, error = p.communicate()
+        version = info.split('\n')[0].split(' - ')[0].split(' ')[-1]
+        if version < '0.27':
+            raise EnvironmentError('version of ffmpeg2theora needs to be 0.27 or later, found %s' % version)
+        p = subprocess.Popen([ffmpeg2theora, '--info', filename],
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        info, error = p.communicate()
+        try:
+            info = json.loads(info)
+        except:
+            #remove metadata, can be broken
+            reg = re.compile('"metadata": {.*?},', re.DOTALL)
+            info = re.sub(reg, '', info)
+            info = json.loads(info)
+        if 'video' in info:
+            for v in info['video']:
+                if not 'display_aspect_ratio' in v and 'width' in v:
+                    v['display_aspect_ratio'] = '%d:%d' % (v['width'], v['height'])
+                    v['pixel_aspect_ratio'] = '1:1'
+        return info
+
+    return {'path': filename, 'size': 0}
 
 def avinfo(filename):
     if os.path.getsize(filename):
         info = ox.avinfo(filename)
+				#info = imginfo(filename)
         if 'video' in info and info['video'] and 'width' in info['video'][0]:
             if not 'display_aspect_ratio' in info['video'][0]:
                 dar = AspectRatio(info['video'][0]['width'], info['video'][0]['height'])
